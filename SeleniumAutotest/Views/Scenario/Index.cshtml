@@ -1,0 +1,142 @@
+﻿@{
+    Layout = "_LayoutSimple";
+    ViewData["Title"] = "Сценарии";
+}
+
+<h1>Общие сценарии</h1>
+
+<a href="/api/scenario/new" target="_blank" class="k-button"> 
+    Добавить
+</a>
+<div id="qScenarios"></div>
+
+<script>
+    $(document).ready(function() {
+        var qScenarios = $("#qScenarios").kendoGrid({
+            dataSource: {
+                requestEnd: function(e) {
+                    if (e.type != "read") {
+                        $("#qScenarios").data('kendoGrid').dataSource.read();
+                    }
+                },
+                transport: {
+                    read: {
+                        url: "/api/scenarios"
+                    },
+                    destroy: {
+                        url: "/api/scenarios/destroy",
+                        type: "post"
+                    }
+                },
+                schema: {
+                    model: {
+                        id: "Id",
+                        fields: {
+                            Title: { type: "string", validation: { required: true } },
+                            Type: { type: "number", validation: { required: true } }
+                        }
+                    }
+                },
+                pageSize: 20,
+                page: 1
+            },
+            noRecords: {
+                template: "<p class='alert alert-info mb-0 w-100'>Нет записей для отображения.</p>"
+            },
+            detailTemplate: $("#journal_template").html(),
+            detailInit: function(e){
+                $(e.detailRow).find("div.journal").kendoGrid({
+                    dataSource: {      
+                        transport: {
+                            read: {
+                                url: "/api/scenario/journal/" + e.data.Id
+                            }
+                        },                        
+                        pageSize: 20,
+                        page: 1
+                    },
+                    noRecords: {
+                        template: "<p class='alert alert-info mb-0 w-100'>Нет записей для отображения.</p>"
+                    },
+                    detailTemplate: $("#journal_item_template").html(),
+                    pageable: {
+                        refresh: true
+                    },
+                    columns:[
+                        { field: "Message", title: "Сообщение", template: "#= Message.slice(0, 50) + '...' #" },
+                        { field: "DateString", title: "Дата" },
+                    ]
+                });
+            },
+            editable: "popup",
+            pageable: {
+                refresh: true
+            },
+            noRecords: {
+                template: "<p class='alert alert-info mb-0 w-100'>Нет записей для отображения.</p>"
+            },
+            sortable: true,
+            columns: [
+                { field: "Title", title: "Название", template: "<a href='/scenario/#= Id #' target='_blank'>#= Title #</a>" },
+                { title: " ", template: "<button type='button' class='k-button run' data-id='#= Id #' title='Запуск'><span class='k-i-redo'></span></button>", width: "100px" },
+                { title: " ", template: "<button type='button' class='k-button' title='Редактировать'><span class='.k-i-edit'><a href='/scenario/#= Id #' target='_blank'>Редактировать</a></span></button>", width: "150px" },
+                { command: ["destroy"], width: "150px" }
+            ]
+        });
+
+        $("body").on("click", ".run", function(e) {
+            var btn = $(e.currentTarget);
+            var id = btn.data("id");
+
+            var wnd = $("<div></div>").kendoDialog({
+                width: "50%",
+                heigth: "70%",
+                title: "Параметры запуска",
+                content: $("#executionOptions").html(),
+                actions: [
+                {
+                    text: "Запустить",
+                    action: function(e) {
+                        var options = {
+                            ScenarioId: id,
+                            Iterations: $(e.sender.element).find("#Iterations").val(),
+                            Parallel: $(e.sender.element).find("#Parallel").prop("checked"),
+                            Browsers: getBrowsers($(e.sender.element))
+                        };
+                        kendo.ui.progress($(e.sender.element), true);
+                        $.ajax({
+                            url: "/api/scenario/execute",
+                            type: "post",
+                            data: options,
+                            error: function(response) {
+                                kendo.ui.progress($(e.sender.element), false);
+                                swowError(response.responseText);
+                            },
+                            success: function(response){
+                                kendo.ui.progress($(e.sender.element), false);
+                            }
+                        });
+                        return false;
+                    },
+                    primary: true
+                },
+                {
+                    text: "Отмена"
+                }]
+            }).data("kendoDialog").open();
+        });
+    });
+</script>
+
+<script type="text/html" id="journal_item_template">
+    #= Message #
+</script>
+
+<script type="text/html" id="journal_template">
+    <h5>Журнал запусков</h5>
+    <div class="journal"></div>
+</script>
+
+@{
+    await Html.RenderPartialAsync("ExecuteOptionsTemplate");
+}

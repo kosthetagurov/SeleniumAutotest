@@ -1,0 +1,15 @@
+﻿@using Microsoft.AspNetCore.Localization
+
+@{ 
+    var culture = "ru-RU";
+}
+
+<script type="text/javascript" src="~/lib/jquery/dist/jquery.js"></script>
+<script src="~/kendo/js/kendo.all.min.js"></script>
+<script src="~/kendo/js/cultures/kendo.culture.@(culture).min.js"></script>
+<script src="~/kendo/js/messages/kendo.messages.@(culture).min.js"></script>
+<link href="~/kendo/styles/kendo.qspro.min.css" rel="stylesheet" type="text/css" />
+
+<script>
+    kendo.culture("@culture");
+</script>

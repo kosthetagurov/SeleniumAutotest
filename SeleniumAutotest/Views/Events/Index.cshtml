@@ -1,0 +1,77 @@
+﻿@{
+    Layout = "_Layout";
+    ViewData["Title"] = "События";
+}
+
+<a href="/api/events/clear" class="k-button">Очистить логи</a>
+<br />
+<div id="logs"></div>
+
+<script>
+    $(document).ready(function() {
+        $("#logs").kendoGrid({
+            dataSource: {
+                page: 1,
+                pageSize: 20,
+                requestEnd: function(e) {
+                    if (e.type != "read") {
+                        $("#actions").data('kendoGrid').dataSource.read();
+                    }
+                },
+                transport:{
+                    read:{
+                        url: "/api/events"
+                    },                    
+                    destroy: {
+                        url: "/api/events/delete",
+                        type: "post"
+                    }
+                },
+                schema: {
+                    model: {
+                        id: "Id",
+                        fields: {
+                            IsSuccess: { type: "boolean" },
+                            Message: { type: "string" },
+                            TypeString: { type: "string" },
+                            DateString: { type: "string" }
+                        }
+                    }
+                }
+            },
+            noRecords: {
+                template: "<p class='alert alert-info mb-0 w-100'>Нет записей для отображения.</p>"
+            },
+            sortable: true,
+            pageable: true,
+            editable: "popup",
+            columns: [                
+                { command: { text: "Просмотреть", click: showDetails }, title: " ", width: "180px" },
+                { field: "Message", template: "#= Message.slice(0, 50) + '...' #"  },
+                { field: "TypeString" },
+                { field: "DateString" },
+                { field: "IsSuccess" },
+                { command: ["destroy"], width: "180px" }
+            ]
+        });   
+
+        function showDetails(e) {
+            e.preventDefault();
+
+            var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
+            
+            var content = dataItem.Message;
+
+            var wnd = $("<div></div>").kendoDialog({
+                width: "50%",
+                heigth: "50%",
+                title: dataItem.TypeString,
+                content: content,
+                actions: [            
+                    {
+                        text: "Закрыть"
+                    }]
+            }).data("kendoDialog").open();
+        }
+    });
+</script>

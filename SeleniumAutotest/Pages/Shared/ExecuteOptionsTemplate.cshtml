@@ -1,0 +1,44 @@
+﻿@using SeleniumAutotest.Core
+
+<script type="text/html" id="executionOptions">
+    <div class="row">
+        <div class="col-lg-6">
+            <label for="#Iterations">Количество итераций</label>
+        </div>
+        <div class="col-lg-6">
+            <input type="number" id="Iterations" min="1" max="@(int.MaxValue)" value="1"/>
+        </div>
+    </div>
+
+    @*<div class="row">
+        <div class="col-lg-6">
+            <label for="#Parallel">Параллельно</label>
+        </div>
+        <div class="col-lg-6">
+            <input type="checkbox" id="Parallel" />
+        </div>
+    </div>*@
+
+    <div class="row">
+        <div class="col-lg-6">
+            <label>Браузеры</label>
+        </div>
+        
+        <div class="col-lg-6">
+            @foreach (var type in Enum.GetNames(typeof(Browser)).OrderBy(x => x)) {
+                <label style="width: 100%;">
+                    <input type="checkbox" name="Browser" value="@type">
+                    <span>@type</span>
+                </label>
+            }    
+        </div>        
+    </div>
+</script>
+
+<script>
+    function getBrowsers(wrapper) {
+        return wrapper.find('[name="Browser"]:checked').map(function(){
+          return $(this).val();
+        }).get()
+    }
+</script>

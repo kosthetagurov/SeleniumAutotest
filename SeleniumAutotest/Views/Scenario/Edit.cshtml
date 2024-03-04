@@ -1,0 +1,177 @@
+﻿@using SeleniumAutotest.Core.Scenarios
+
+@model SeleniumAutotest.Core.Scenarios.Scenario
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Сценарий";
+}
+
+<div class="row">
+    <div class="col-lg-2">
+        <label for="Name">Название</label>
+    </div>
+    <div class="col-lg-10">
+        <input type="text" name="Title" value="@Model.Title" class="k-input k-textbox changeable" />
+    </div>
+</div>
+<div class="row">
+    <div class="col-lg-2">
+        <label for="Name">Действия</label>
+    </div>
+    <div class="col-lg-10">
+        <div id="actions"></div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        $("#actions").kendoGrid({
+            dataSource: {
+                requestEnd: function(e) {
+                    if (e.type != "read") {
+                        $("#actions").data('kendoGrid').dataSource.read();
+                    }
+                },
+                transport:{
+                    read:{
+                        url: "/api/scenario/actions/@Model.Id"
+                    },
+                    create: {
+                        url: "/api/scenario/addaction",
+                        type: "post"
+                    },
+                    update: {
+                        url: "/api/scenario/updateaction",
+                        type: "post"
+                    },
+                    destroy: {
+                        url: "/api/scenario/deleteaction",
+                        type: "post"
+                    }
+                },
+                schema: {
+                    model: {
+                        id: "Id",
+                        fields: {
+                            ContinueOnError: { type: "boolean", validation: { required: false } },
+                            Name: { type: "string", validation: { required: true } },
+                            Value: { type: "string", validation: { required: true } },
+                            DelayMilliseconds: { type: "number", validation: { required: true } }
+                        }
+                    }
+                }
+            },
+            noRecords: {
+                template: "<p class='alert alert-info mb-0 w-100'>Нет записей для отображения.</p>"
+            },
+            editable: "popup",
+            toolbar: ["create"],
+            save: function(e) {
+                e.model.ScenarioId = "@Model.Id";
+            },
+            edit: function(e) {
+                var swaps = e.container.find('.swap').closest('.k-edit-field');
+                swaps.prev().remove();
+                swaps.remove();
+            },
+            columns: [
+                { template: $("#arrows").html(), width: "100px", attributes: { style: "text-align:center" } },
+                { field: "Name", editor: dropDownEditor },
+                { field: "Value", editor: textEditor },
+                { field: "DelayMilliseconds", editor: numEditor },
+                { field: "ContinueOnError" },
+                { command: ["edit", "destroy"] }
+            ]
+        });
+
+        $("body").on("change", ".changeable", function()
+        {
+             updateModel();
+        });
+
+        $("body").on("click", ".swap", function(e)
+        {
+            var sender = $(e.currentTarget);
+            var id = sender.attr("id");
+            var type = sender.data("type");
+            swap(type, id)
+        });
+
+        function updateModel() {
+            var model = {
+                ///
+                Id: "@Model.Id",
+                CreatedAt: "@Model.CreatedAt",
+                ///
+                Title: $('[name="Title"]').val(),
+            }
+
+            $.ajax({
+                url: "/api/scenario/update",
+                type: "post",
+                data: model
+            })
+        }
+
+        function swap(type, id) {
+            $.ajax({
+                url: "/api/scenario/swap/" + type + "/" + id,
+                type: "post",
+                success: function() {
+                    $("#actions").data('kendoGrid').dataSource.read();
+                }
+            })
+        }
+
+        function textEditor(container, options) {
+            $('<textarea required name="' + options.field + '"></textarea>')
+                .appendTo(container)
+                .kendoTextArea({
+                    rows: 10,
+                    resize: "vertical"
+                });
+        }
+
+        function numEditor(container, options) {
+            $('<input required name="' + options.field + '">')
+                .appendTo(container)
+                .kendoNumericTextBox({
+                    min: 0,
+                    max: @(int.MaxValue)                    
+                });
+        }
+
+        function dropDownEditor(container, options) {
+            $('<input required name="' + options.field + '"/>')
+                .appendTo(container)
+                .kendoDropDownList({
+                    dataSource: [
+                        @Html.Raw(string.Join(",", Enum.GetNames(typeof(ActionType)).OrderBy(x => x).Select(x => "\"" + x + "\"")))
+                    ]
+                });
+        }
+    });
+</script>
+
+<script type="text/html" id="arrows">
+    <button type="button" class="swap k-button up" data-type="up" id="#= Id #">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-up" viewBox="0 0 16 16">
+          <path fill-rule="evenodd" d="M8 15a.5.5 0 0 0 .5-.5V2.707l3.146 3.147a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 1 0 .708.708L7.5 2.707V14.5a.5.5 0 0 0 .5.5z"/>
+        </svg>
+    </button>
+    <button type="button" class="swap k-button down" data-type="down" id="#= Id #">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-down" viewBox="0 0 16 16">
+          <path fill-rule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z"/>
+        </svg>
+    </button>
+</script>
+
+<style>
+    input {
+        width: 100%!important
+    }
+
+    .up {
+        margin-bottom: 5px;
+    }
+</style>

@@ -1,0 +1,72 @@
+﻿@using SeleniumAutotest.ViewModels
+@using SeleniumAutotest.Controllers
+
+@model DriverManagerViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Драйверы";
+}
+
+
+<h4>Управление драйверами</h4>
+
+<br />
+<p>Установленные драйверы</p>
+
+@if (Model.Drivers != null && Model.Drivers.Count != 0)
+{
+    <ul>
+        @foreach (var item in Model.Drivers)
+        {
+            <li>
+                @item.Name - @item.File - @Html.Raw(item.Exists ? "<span class=\"text-success\">установлен</span>" : "<span class=\"text-danger\">не установлен</span>")
+            </li>
+        }
+    </ul>
+}
+else
+{
+    <i>Драйверы не найдены</i>
+}
+
+<p>
+    <a href="/Info#drivers" target="_blank">Отдкуда скачать?</a>
+</p>
+
+<p>Установить драйверы</p>
+@foreach (var d in DriverManagerController.DriverNames)
+{
+    <div class="row">
+        <div class="col-lg-4">
+            <label for="#@d.Value">
+                @d.Key
+            </label>
+        </div>
+        <div class="col-lg-8">
+            <input type="file" class="upload" name="@d.Value" id="@d.Value" accept=".exe" data-driver="@d.Key">
+        </div>
+    </div>
+}
+
+<script>
+    const baseUrl = "/api/drivers/upload/";
+
+    $(document).ready(function(){
+        $(".upload").kendoUpload({
+            async: {
+                saveUrl: baseUrl,
+            },            
+            multiple: false,
+            select: function(e) {
+                var type = $(e.sender.element).data('driver');
+                e.sender.options.async.saveUrl = baseUrl + type;
+            },
+            success: function(e){
+                location.reload();
+            },
+            error: function(e) {
+                swowError(e.XMLHttpRequest.response);
+            }
+        });
+    });
+</script>
